@@ -1,49 +1,53 @@
-import { Handler } from "@netlify/functions";
+import type { Handler } from "@netlify/functions";
 import { TwitterApi } from "twitter-api-v2";
 
-const api = new TwitterApi({
-  appKey: process.env.TWITTER_API_KEY!,
-  appSecret: process.env.TWITTER_API_SECRET!,
+const client = new TwitterApi({
+  appKey:    process.env.TWITTER_API_KEY!,
+  appSecret: process.env.TWITTER_API_SECRET!
 });
+const CALLBACK = process.env.TWITTER_CALLBACK!;
 
-const CALLBACK = `https://${process.env.SITE_NAME}.netlify.app/.netlify/functions/auth_x`;
+/* ---------- STEP 1: redirect ---------- */
+export const handler: Handler = async (evt) => {
+  // 1. callback comes back with oauth_token + oauth_verifier
+  if (evt.queryStringParameters?.oauth_token &&
+      evt.queryStringParameters?.oauth_verifier) {
 
-export const handler: Handler = async (e) => {
-  const { oauth_token, oauth_verifier } = e.queryStringParameters || {};
+    // get token & secret we stored in cookie
+    const reqToken = evt.queryStringParameters.oauth_token;
+    const reqSecret = evt.headers.cookie
+      ?.match(/reqSecret=([^;]+)/)?.[1];
 
-  try {
-    // Step 1: Redirect user to Twitter for authorization
-    if (!oauth_token) {
-      const { url } = await api.generateAuthLink(CALLBACK, {
-        scope: ['tweet.read']
-      });
-      return {
-        statusCode: 302,
-        headers: { Location: url }
-      };
+    if (!reqSecret) {
+      return { statusCode: 400, body: "missing token secret" };
     }
 
-    // Step 2: Handle callback and exchange tokens
-    const { client } = await api.login(oauth_verifier!);
-    const me = await client.v1.verifyCredentials();
+    try {
+      const { client: logged, accessToken, accessSecret } =
+        await client.login(reqToken, reqSecret,
+                           evt.queryStringParameters.oauth_verifier);
 
-    return {
-      statusCode: 302,
-      headers: {
-        Location: `https://rad-toffee-97e32a.netlify.app/?u=${me.screen_name}`
-      }
-    };
-  } catch (error) {
-    console.error('OAuth function error:', error);
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        error: 'Authentication failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      })
-    };
+      // SUCCESS → redirect back to front with handle
+      const user = await logged.v2.me();
+      return {
+        statusCode: 302,
+        headers: { Location: `https://rad-toffee-97e32a.netlify.app/?u=${user.data.username}` }
+      };
+    } catch (e:any) {
+      return { statusCode: 401, body: e.message };
+    }
   }
+
+  /* ---------- STEP 0: generate auth link ---------- */
+  const { url, oauth_token, oauth_token_secret } =
+        await client.generateAuthLink(CALLBACK);
+
+  // store secret in cookie for 15 min
+  return {
+    statusCode: 302,
+    headers: {
+      "Set-Cookie": `reqSecret=${oauth_token_secret}; Max-Age=900; Path=/; HttpOnly; Secure`,
+      Location: url
+    }
+  };
 }; 
