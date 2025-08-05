@@ -54,6 +54,15 @@ export const handler: Handler = async (evt) => {
       };
     }
 
+    if (!prof.public_metrics) {
+      console.error("TweetScout anomaly", prof);
+      return {
+        statusCode: 502,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ error: "tweetscout_empty" })
+      };
+    }
+
     const smartList = smartPage.smart_followers?.slice(0,5).map((s:any)=>s.screen_name) || [];
     const smartMedian = meta.median_followers || 0;
     const age = Math.floor((Date.now()-Date.parse(prof.created_at))/3.154e10);
