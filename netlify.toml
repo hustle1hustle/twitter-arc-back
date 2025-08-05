@@ -1,20 +1,2 @@
-[build]
-  base = "web"
-  command = "npm run build"
-  publish = "web/.next"
-
-[build.environment]
-  NODE_VERSION = "18"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
-
 [functions]
-  directory = "netlify/functions"
-
-[[headers]]
-  for = "/.netlify/functions/*"
-  [headers.values]
-    Access-Control-Allow-Origin  = "https://rad-toffee-97e32a.netlify.app"
-    Access-Control-Allow-Methods = "GET, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type" 
+  directory = "netlify/functions" 
