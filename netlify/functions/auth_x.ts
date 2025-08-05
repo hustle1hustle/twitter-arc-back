@@ -1,6 +1,9 @@
 import type { Handler } from "@netlify/functions";
 import { TwitterApi } from "twitter-api-v2";
 
+// volatile store lives per warm lambda instance (good for 5-10 min)
+const inMemorySecrets = new Map<string, string>();
+
 const client = new TwitterApi({
   appKey:    process.env.TWITTER_API_KEY!,
   appSecret: process.env.TWITTER_API_SECRET!
@@ -13,13 +16,12 @@ export const handler: Handler = async (evt) => {
   if (evt.queryStringParameters?.oauth_token &&
       evt.queryStringParameters?.oauth_verifier) {
 
-    // get token & secret we stored in cookie
+    // get token & secret we stored in memory
     const reqToken = evt.queryStringParameters.oauth_token;
-    const cookieHdr = evt.headers.cookie || "";
-    const reqSecret = cookieHdr.match(/reqSecret=([^;]+)/)?.[1];
+    const reqSecret = inMemorySecrets.get(reqToken);
 
     if (!reqSecret) {
-      return { statusCode: 400, body: "missing token secret" };
+      return { statusCode: 410, body: 'request token expired' };
     }
 
     try {
@@ -42,18 +44,9 @@ export const handler: Handler = async (evt) => {
   const { url, oauth_token, oauth_token_secret } =
         await client.generateAuthLink(CALLBACK);
 
-  // 15 мин, видим на всём домене
-  const cookie = [
-    `reqSecret=${oauth_token_secret}`,
-    "Max-Age=900",
-    "Path=/",
-    "HttpOnly",
-    "Secure",
-    "SameSite=Lax"
-  ].join("; ");
-
+  inMemorySecrets.set(oauth_token, oauth_token_secret);   // <-- NEW
   return {
     statusCode: 302,
-    headers: { "Set-Cookie": cookie, Location: url }
+    headers: { Location: url }
   };
 }; 
