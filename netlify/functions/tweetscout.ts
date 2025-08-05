@@ -3,24 +3,8 @@
 import fetch from "node-fetch";
 
 const BASE = "https://api.tweetscout.io/b2b";
-const HEAD = { "x-api-key": process.env.TWEETSCOUT_KEY };
+const HEAD = { "x-api-key": process.env.TWEETSCOUT_KEY! };
 
-export const fetchSmartMeta = async (handle: string) =>
-  fetch(`${BASE}/smart_followers/${handle}/meta`, { headers: HEAD }).then(r => r.json());
-
-export const fetchUserEngagement = async (handle: string) =>
-  fetch(`${BASE}/user/${handle}`, { headers: HEAD })
-    .then(r => r.json())
-    .then(d => ({
-      likes: d.avg_likes,
-      rts: d.avg_retweets,
-      engagement: d.engagement_rate
-    }));
-
-export const fetchAudience = async (handle: string) =>
-  fetch(`${BASE}/user/${handle}`, { headers: HEAD })
-    .then(r => r.json())
-    .then(d => ({
-      hashtags: (d.top_hashtags || []).slice(0, 5).map((x: any) => x.tag),
-      mentions: (d.top_mentions || []).slice(0, 5).map((x: any) => x.tag)
-    })); 
+export const tsUser = (h) => fetch(`${BASE}/user/${h}`,            { headers: HEAD }).then(r=>r.json());
+export const tsSmart = (h) => fetch(`${BASE}/smart_followers/${h}?page=1`, { headers: HEAD }).then(r=>r.json());
+export const tsMeta  = (h) => fetch(`${BASE}/smart_followers/${h}/meta`,   { headers: HEAD }).then(r=>r.json()); 
