@@ -11,16 +11,20 @@ export const handler: Handler = async (evt) => {
 
     if (user.error || smart.error) throw new Error("tweetscout_unavailable");
 
-    const pub   = user.public_metrics ?? {};
+    const followers = user.followers_count || 0;
     const smartTop = (smart.smart_followers||[]).slice(0,5)
                      .map(s => `@${s.screen_name}`);
-    const engRate = user.engagement_rate ?? 0;
+    
+    // Возраст аккаунта в годах
+    const createdDate = new Date(user.register_date);
+    const now = new Date();
+    const ageYears = (now - createdDate) / (1000 * 60 * 60 * 24 * 365);
 
     const repScore = Math.round(
-        0.35*Math.log10(Math.max(pub.followers_count||1,1))*100 +
-        0.25*(smartTop.length/Math.max(pub.followers_count||1,1))*1000 +
-        0.15*Math.sqrt(((Date.now()-Date.parse(user.created_at))/3.154e10))*10 +
-        0.15*engRate +
+        0.35*Math.log10(Math.max(followers,1))*100 +
+        0.25*(smartTop.length/Math.max(followers,1))*1000 +
+        0.15*Math.sqrt(ageYears)*10 +
+        0.15*0 + // engagement rate нет в API
         0.10*((meta.avg_smart_score||0)/10)
     );
 
@@ -29,15 +33,18 @@ export const handler: Handler = async (evt) => {
       headers:{ "Access-Control-Allow-Origin":"*"},
       body: JSON.stringify({
         rep: repScore,
-        followers: pub.followers_count,
+        followers: followers,
         smartTop,
         smartMedianFollowers: meta.median_followers || 0,
         smartAvgScore: meta.avg_smart_score || 0,
-        engagementRate: engRate,
-        avgLikes: user.avg_likes,
-        avgRetweets: user.avg_retweets,
-        topHashtags: (user.top_hashtags||[]).slice(0,5).map(t=>`#${t.tag}`),
-        topMentions: (user.top_mentions||[]).slice(0,5).map(t=>`@${t.tag}`),
+        engagementRate: 0, // нет в API
+        avgLikes: 0, // нет в API
+        avgRetweets: 0, // нет в API
+        topHashtags: [], // нет в API
+        topMentions: [], // нет в API
+        accountAge: ageYears.toFixed(1),
+        verified: user.verified,
+        tweetsCount: user.tweets_count,
         source:"tweetscout"
       })
     };
