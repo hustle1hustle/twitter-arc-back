@@ -1,0 +1,10 @@
+{
+  "name": "twitter-arc-back",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/functions": "^4",
+    "twitter-api-v2": "^2.5.0",
+    "node-fetch": "^3.3.2"
+  }
+} 
