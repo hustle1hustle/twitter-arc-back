@@ -49,4 +49,34 @@ Bolt placeholders example:
 ```html
 <span data-slot="smartTop.0">@a16z</span>
 <span data-slot="engagementRate">3.2%</span>
-``` 
+```
+
+## Twitter API Setup
+
+### Environment Variables
+```bash
+# Twitter API Keys (OAuth 1.0a)
+TWITTER_API_KEY=Sw1974gVoDYhgnCcwqtEgQFAQ
+TWITTER_API_SECRET=QBhDvIJxIsTYAKxi4oOylU6wEbyyEhEk7MVNkn85liiq1lCV15
+
+# TweetScout API
+TWEETSCOUT_KEY=3a40c7e0-66b8-4686-81eb-6bdccdbc3797
+
+# Callback URLs
+TWITTER_CALLBACK=https://your-app.netlify.app/.netlify/functions/auth_x
+```
+
+### Debug Twitter API
+```bash
+# Test Twitter API keys
+curl https://your-app.netlify.app/.netlify/functions/debug_twitter
+
+# Expected response:
+# {"ok":true,"url":"https://api.twitter.com/oauth/authorize?..."}
+```
+
+### Netlify Functions
+- **auth_x.ts**: Twitter OAuth flow
+- **debug_twitter.ts**: Test Twitter API keys
+- **rep.ts**: Reputation calculation
+- **tweetscout.ts**: TweetScout API integration 
