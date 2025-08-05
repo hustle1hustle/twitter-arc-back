@@ -1,9 +1,53 @@
 import { Handler } from "@netlify/functions";
 import fetch from "node-fetch";
+import { TwitterApi } from "twitter-api-v2";
 import { fetchSmartMeta, fetchUserEngagement, fetchAudience } from "./tweetscout";
 
 const API = "https://api.tweetscout.io/v2";
 const HEAD = { Authorization: `Bearer ${process.env.TWEETSCOUT_KEY}` };
+
+// Twitter API fallback
+const twitterClient = new TwitterApi(process.env.TWITTER_BEARER_TOKEN || '');
+
+async function fetchProfileWithFallback(handle: string) {
+  try {
+    // Try TweetScout first
+    const [prof, smartPage, meta, eng, aud] = await Promise.all([
+      fetch(`${API}/user/${handle}`, { headers: HEAD }).then(r=>r.json()),
+      fetch(`${API}/smart_followers/${handle}?page=1`, { headers: HEAD }).then(r=>r.json()),
+      fetchSmartMeta(handle),
+      fetchUserEngagement(handle),
+      fetchAudience(handle)
+    ]);
+    
+    return { prof, smartPage, meta, eng, aud, source: 'tweetscout' };
+  } catch (error) {
+    console.log('TweetScout failed, falling back to Twitter API');
+    
+    // Fallback to Twitter API
+    const user = await twitterClient.v2.userByUsername(handle, {
+      'user.fields': ['id', 'username', 'name', 'public_metrics', 'verified', 'profile_image_url', 'created_at']
+    });
+    
+    if (!user.data) {
+      throw new Error('User not found');
+    }
+    
+    // Mock data for Twitter API fallback
+    const prof = {
+      followers: user.data.public_metrics?.followers_count || 0,
+      created_at: user.data.created_at,
+      verified: user.data.verified || false
+    };
+    
+    const smartPage = { smart_followers: [] };
+    const meta = { median_followers: 0, avg_smart_score: 0 };
+    const eng = { engagement: 0 };
+    const aud = { hashtags: [], mentions: [] };
+    
+    return { prof, smartPage, meta, eng, aud, source: 'twitter' };
+  }
+}
 
 export const handler: Handler = async (e) => {
   // Handle CORS preflight
@@ -30,14 +74,7 @@ export const handler: Handler = async (e) => {
   }
 
   try {
-    // fetch in parallel
-    const [prof, smartPage, meta, eng, aud] = await Promise.all([
-      fetch(`${API}/user/${u}`, { headers: HEAD }).then(r=>r.json()),
-      fetch(`${API}/smart_followers/${u}?page=1`, { headers: HEAD }).then(r=>r.json()),
-      fetchSmartMeta(u),
-      fetchUserEngagement(u),
-      fetchAudience(u)
-    ]);
+    const { prof, smartPage, meta, eng, aud, source } = await fetchProfileWithFallback(u);
 
     const smartList = smartPage.smart_followers?.slice(0,5).map((s:any)=>s.screen_name) || [];
     const smartMedian = meta.median_followers || 0;
@@ -61,7 +98,8 @@ export const handler: Handler = async (e) => {
         smartMedianFollowers: smartMedian,
         engagementRate: eng.engagement,
         topHashtags: aud.hashtags,
-        topMentions: aud.mentions
+        topMentions: aud.mentions,
+        source // Indicate data source
       })
     };
   } catch (error) {

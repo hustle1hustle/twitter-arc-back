@@ -56,11 +56,11 @@ Bolt placeholders example:
 ### Environment Variables
 ```bash
 # Twitter API Keys (OAuth 1.0a)
-TWITTER_API_KEY=Sw1974gVoDYhgnCcwqtEgQFAQ
-TWITTER_API_SECRET=QBhDvIJxIsTYAKxi4oOylU6wEbyyEhEk7MVNkn85liiq1lCV15
+TWITTER_API_KEY=YOUR_TWITTER_API_KEY
+TWITTER_API_SECRET=YOUR_TWITTER_API_SECRET
 
 # TweetScout API
-TWEETSCOUT_KEY=3a40c7e0-66b8-4686-81eb-6bdccdbc3797
+TWEETSCOUT_KEY=YOUR_TWEETSCOUT_KEY
 
 # Callback URLs
 TWITTER_CALLBACK=https://your-app.netlify.app/.netlify/functions/auth_x
@@ -78,5 +78,5 @@ curl https://your-app.netlify.app/.netlify/functions/debug_twitter
 ### Netlify Functions
 - **auth_x.ts**: Twitter OAuth flow
 - **debug_twitter.ts**: Test Twitter API keys
-- **rep.ts**: Reputation calculation
+- **rep.ts**: Reputation calculation with Twitter API fallback
 - **tweetscout.ts**: TweetScout API integration 
