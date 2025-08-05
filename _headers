@@ -1,0 +1,4 @@
+# /.netlify/functions/*
+Access-Control-Allow-Origin: https://rad-toffee-97e32a.netlify.app
+Access-Control-Allow-Methods: GET, OPTIONS
+Access-Control-Allow-Headers: Content-Type 

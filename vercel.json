@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/trigger": {
+      "memory": 128
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/trigger?worker=pull",
+      "schedule": "*/1 * * * *"
+    }
+  ]
+} 
