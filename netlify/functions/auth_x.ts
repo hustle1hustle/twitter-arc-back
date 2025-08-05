@@ -15,8 +15,8 @@ export const handler: Handler = async (evt) => {
 
     // get token & secret we stored in cookie
     const reqToken = evt.queryStringParameters.oauth_token;
-    const reqSecret = evt.headers.cookie
-      ?.match(/reqSecret=([^;]+)/)?.[1];
+    const cookieHdr = evt.headers.cookie || "";
+    const reqSecret = cookieHdr.match(/reqSecret=([^;]+)/)?.[1];
 
     if (!reqSecret) {
       return { statusCode: 400, body: "missing token secret" };
@@ -42,12 +42,18 @@ export const handler: Handler = async (evt) => {
   const { url, oauth_token, oauth_token_secret } =
         await client.generateAuthLink(CALLBACK);
 
-  // store secret in cookie for 15 min
+  // 15 мин, видим на всём домене
+  const cookie = [
+    `reqSecret=${oauth_token_secret}`,
+    "Max-Age=900",
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax"
+  ].join("; ");
+
   return {
     statusCode: 302,
-    headers: {
-      "Set-Cookie": `reqSecret=${oauth_token_secret}; Max-Age=900; Path=/; HttpOnly; Secure`,
-      Location: url
-    }
+    headers: { "Set-Cookie": cookie, Location: url }
   };
 }; 
