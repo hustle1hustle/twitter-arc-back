@@ -6,13 +6,15 @@ const api = new TwitterApi({
   appSecret: process.env.TWITTER_API_SECRET!,
 });
 
+const CALLBACK = `https://${process.env.SITE_NAME}.netlify.app/.netlify/functions/auth_x`;
+
 export const handler: Handler = async (e) => {
   const { oauth_token, oauth_verifier } = e.queryStringParameters || {};
 
   try {
     // Step 1: Redirect user to Twitter for authorization
     if (!oauth_token) {
-      const { url } = await api.generateAuthLink(process.env.TWITTER_CALLBACK!, {
+      const { url } = await api.generateAuthLink(CALLBACK, {
         scope: ['tweet.read']
       });
       return {
