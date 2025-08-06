@@ -1,4 +1,5 @@
 import { Handler } from "@netlify/functions";
+import { TwitterApi } from "twitter-api-v2";
 import { ts } from "./tweetscout";
 
 // гарантирует число, иначе возвращает дефолт
@@ -31,6 +32,53 @@ export const handler: Handler = async (e)=>{
   
   if(info.error||topFollowersData.error) return { statusCode: 404, body: '{"error":"rep_not_built"}' };
   
+  // Twitter API calls
+  let engagementRate = 0;
+  let avgLikes = 0;
+  let avgRetweets = 0;
+  let bluePct = 0;
+  let topHashtags = [];
+  let topMentions = [];
+  
+  try {
+    const BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAALn02gEAAAAARalQBbXeqGzfjfO47Tl2PAdlMgs%3DYFsxAlY9KqAUhopPEuqPbHkZf59Krtn2youfT1xtIlEjBfzjMj';
+    const twitterClient = new TwitterApi(BEARER_TOKEN);
+    
+    // Get user metrics
+    const user = await twitterClient.v2.userByUsername(h, {
+      'user.fields': ['public_metrics', 'verified']
+    });
+    
+    if (user.data) {
+      const metrics = user.data.public_metrics;
+      const followers = metrics?.followers_count || 0;
+      const tweetCount = metrics?.tweet_count || 0;
+      const totalLikes = metrics?.like_count || 0;
+      
+      // Calculate engagement rate from user metrics
+      if (followers > 0 && tweetCount > 0) {
+        engagementRate = parseFloat(((totalLikes / (tweetCount * followers)) * 100).toFixed(4));
+      }
+      
+      // Get followers for blue %
+      const followers_data = await twitterClient.v2.followers(user.data.id, {
+        'user.fields': ['verified_type'],
+        'max_results': 100
+      });
+      
+      if (followers_data.data && followers_data.data.length > 0) {
+        const verifiedCount = followers_data.data.filter(u => u.verified_type && u.verified_type !== 'none').length;
+        bluePct = parseFloat((100 * verifiedCount / followers_data.data.length).toFixed(2));
+      }
+      
+      console.log('Twitter API данные:');
+      console.log('engagementRate:', engagementRate);
+      console.log('bluePct:', bluePct);
+    }
+  } catch (error) {
+    console.error('Twitter API error:', error.message);
+  }
+  
   // Исправляем парсинг данных - используем правильные поля
   const followers = safe(info.followers_count); // Прямое поле, не public_metrics
   const smartTop = (topFollowersData || []).slice(0,5)
@@ -62,7 +110,7 @@ export const handler: Handler = async (e)=>{
     0.35 * Math.log10(Math.max(followers, 1)) * 100 +
     0.25 * (smartTop.length / Math.max(followers, 1)) * 1000 +
     0.15 * Math.sqrt(ageYears) * 10 +
-    0.15 * 0 + // engagement rate пока 0 (нужен Twitter API)
+    0.15 * engagementRate + // Используем Twitter API данные
     0.10 * (smartAvg / 10)
   );
 
@@ -77,13 +125,13 @@ export const handler: Handler = async (e)=>{
       smartTop,
       smartMedianFollowers,
       smartAvgScore,
-      engagementRate: 0, // нужен Twitter API
-      avgLikes: 0, // нужен Twitter API
-      avgRetweets: 0, // нужен Twitter API
-      topHashtags: [], // нужен Twitter API
-      topMentions: [], // нужен Twitter API
-      bluePct: 0, // нужен Twitter API
-      momentum30d: 0 // нужен Twitter API
+      engagementRate,
+      avgLikes,
+      avgRetweets,
+      topHashtags,
+      topMentions,
+      bluePct,
+      momentum30d: 0
     })
   };
 }; 
