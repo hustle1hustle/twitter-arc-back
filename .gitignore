@@ -38,4 +38,9 @@ test-*.cjs
 enhanced-*.cjs
 final-*.cjs
 quick-*.cjs
-sophireum-*.cjs 
+sophireum-*.cjs
+
+# Netlify functions test files (may contain tokens)
+netlify/functions/test-*.ts
+netlify/functions/debug_*.ts
+netlify/functions/test-*.js 
