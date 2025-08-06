@@ -1,11 +1,11 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 const B = "https://api.tweetscout.io/v2";
 const H = { ApiKey: process.env.TWEETSCOUT_KEY };
 
 const ts = (p) => fetch(`${B}${p}`, { headers: H }).then(r => r.json());
 
-exports.handler = async (e) => {
+export const handler = async (e) => {
   const h = (e.queryStringParameters?.u || "").replace(/^@/, "").toLowerCase();
   if (!h) return { statusCode: 400, body: "handle?" };
   
