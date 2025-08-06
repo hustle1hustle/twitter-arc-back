@@ -11,14 +11,22 @@ const tw = new TwitterApi({
 
 export const handler: Handler = async (evt) => {
   const qp = evt.queryStringParameters || {};
-  const { oauth_token, oauth_verifier, oauth_secret } = qp;
+  const { oauth_token, oauth_verifier } = qp;
 
-  console.log('🔍 OAuth 1.0a Debug:', { oauth_token, oauth_verifier, has_secret: !!oauth_secret });
+  console.log('🔍 OAuth 1.0a Debug:', { oauth_token, oauth_verifier });
 
   /* ---------- CALLBACK ---------- */
   if (oauth_token && oauth_verifier) {
-    if (!oauth_secret) {
-      console.error('🔍 Missing oauth_secret in callback');
+    // Get secret from cookie
+    const cookies = evt.headers.cookie || '';
+    const cookieName = `otk_${oauth_token}`;
+    const cookieMatch = cookies.match(new RegExp(`${cookieName}=([^;]+)`));
+    const secret = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
+
+    console.log('🔍 Cookie debug:', { cookieName, hasSecret: !!secret, allCookies: cookies });
+
+    if (!secret) {
+      console.error('🔍 Missing oauth_secret in cookie');
       return { 
         statusCode: 400, 
         headers: { "Content-Type": "application/json" },
@@ -28,14 +36,17 @@ export const handler: Handler = async (evt) => {
 
     try {
       console.log('🔍 Attempting OAuth exchange...');
-      const { client: logged } = await tw.login(oauth_token, oauth_secret, oauth_verifier);
+      const { client: logged } = await tw.login(oauth_token, secret, oauth_verifier);
       const me = await logged.v2.me();
 
       console.log('🔍 OAuth successful, user:', me.data.username);
 
       return {
         statusCode: 302,
-        headers: { Location: `${FRONTPAGE}/?u=${me.data.username}` }
+        headers: { 
+          Location: `${FRONTPAGE}/?u=${me.data.username}`,
+          'Set-Cookie': `${cookieName}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=None`
+        }
       };
     } catch (e: any) {
       console.error("🔍 OAuth exchange failed:", e);
@@ -55,11 +66,15 @@ export const handler: Handler = async (evt) => {
 
   console.log('🔍 Generated OAuth link:', { tok, sec: sec ? 'SECRET_GENERATED' : 'NO_SECRET' });
 
-  // Add secret to callback URL
-  const callbackWithSecret = `${CALLBACK}?oauth_secret=${encodeURIComponent(sec)}`;
+  // Set cookie with secret
+  const cookieName = `otk_${tok}`;
+  const cookieValue = encodeURIComponent(sec);
 
   return {
     statusCode: 302,
-    headers: { Location: url }
+    headers: { 
+      Location: url,
+      'Set-Cookie': `${cookieName}=${cookieValue}; Max-Age=900; Path=/; HttpOnly; Secure; SameSite=None`
+    }
   };
 }; 
