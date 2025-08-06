@@ -10,11 +10,23 @@ export const handler: Handler = async (e)=>{
   
   const h=(e.queryStringParameters?.u||"").replace(/^@/,"").toLowerCase();
   if(!h) return{statusCode:400,body:"handle?"};
+  
+  console.log('📡 Fetching data for:', h);
+  
   const [info,topFollowers,meta,grow,aud,blue]=await Promise.all([
     ts(`/info/${h}`), ts(`/top-followers/${h}?from=db`),
     ts(`/smart_followers/${h}/meta`), ts(`/followers/growth/${h}?days=30`),
     ts(`/audience/${h}`), ts(`/verification/blue/${h}`)
   ]);
+  
+  console.log('📊 API Responses:');
+  console.log('info:', JSON.stringify(info, null, 2));
+  console.log('topFollowers:', JSON.stringify(topFollowers, null, 2));
+  console.log('meta:', JSON.stringify(meta, null, 2));
+  console.log('grow:', JSON.stringify(grow, null, 2));
+  console.log('aud:', JSON.stringify(aud, null, 2));
+  console.log('blue:', JSON.stringify(blue, null, 2));
+  
   if(info.error||topFollowers.error) return { statusCode: 404, body: '{"error":"rep_not_built"}' };
   const pub=info.public_metrics||{}, smartTop=(topFollowers||[]).slice(0,5)
   .map(s=>`@${s.screeName}`); // Исправлено: screeName вместо screenName
@@ -29,6 +41,13 @@ export const handler: Handler = async (e)=>{
   const bluePct     = safe(blue.blue_pct);
   const momentum    = safe(grow.growth_last_30d);
 
+  console.log('🧮 Calculated values:');
+  console.log('followers:', followers);
+  console.log('ageYears:', ageYears);
+  console.log('engagement:', engagement);
+  console.log('smartMed:', smartMed);
+  console.log('smartAvg:', smartAvg);
+
   const rep = Math.round(
        0.35 * Math.log10(Math.max(followers, 1)) * 100 +
        0.25 * (smartTop.length / Math.max(followers, 1)) * 1000 +
@@ -36,6 +55,8 @@ export const handler: Handler = async (e)=>{
        0.15 * engagement +
        0.10 * (smartAvg / 10)
   );
+
+  console.log('🎯 Final REP Score:', rep);
 
   return {
     statusCode: 200,
