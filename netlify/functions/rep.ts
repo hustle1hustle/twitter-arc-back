@@ -13,21 +13,21 @@ export const handler: Handler = async (e)=>{
   
   console.log('📡 Fetching data for:', h);
   
-  // Используем рабочий endpoint /top-followers
-  const [info,topFollowers,meta]=await Promise.all([
+  // Используем только рабочие endpoints
+  const [info,topFollowers,score]=await Promise.all([
     ts(`/info/${h}`), 
     ts(`/top-followers/${h}?from=db`),
-    ts(`/smart_followers/${h}/meta`)
+    ts(`/score/${h}`)
   ]);
   
   console.log('TweetScout info →', info);
   console.log('TweetScout topFollowers →', topFollowers);
-  console.log('TweetScout meta  →', meta);
+  console.log('TweetScout score →', score);
   
   console.log('📊 API Responses:');
   console.log('info:', JSON.stringify(info, null, 2));
   console.log('topFollowers:', JSON.stringify(topFollowers, null, 2));
-  console.log('meta:', JSON.stringify(meta, null, 2));
+  console.log('score:', JSON.stringify(score, null, 2));
   
   if(info.error||topFollowers.error) return { statusCode: 404, body: '{"error":"rep_not_built"}' };
   
@@ -41,8 +41,9 @@ export const handler: Handler = async (e)=>{
   const now = new Date();
   const ageYears = (now - createdDate) / (1000 * 60 * 60 * 24 * 365);
   
-  const smartMed = safe(meta.median_followers);
-  const smartAvg = safe(meta.avg_smart_score);
+  // Используем данные из score endpoint
+  const smartAvg = safe(score.score);
+  const smartMed = safe(score.median_followers || 0);
 
   console.log('🧮 Calculated values:');
   console.log('followers:', followers);
