@@ -96,6 +96,9 @@ export const handler: Handler = async (e)=>{
   const now = new Date();
   const ageYears = (now - createdDate) / (1000 * 60 * 60 * 24 * 365);
   
+  // Год регистрации
+  const joinYear = createdDate.getFullYear();
+  
   // Используем данные из score endpoint
   const smartAvg = scoreData.score || 0;
   const smartMed = safe(scoreData.median_followers || 0);
@@ -114,6 +117,7 @@ export const handler: Handler = async (e)=>{
   console.log('🧮 Calculated values:');
   console.log('followers:', followers);
   console.log('ageYears:', ageYears);
+  console.log('joinYear:', joinYear);
   console.log('smartMed:', smartMed);
   console.log('smartAvg:', smartAvg);
   console.log('smartMedianFollowers:', smartMedianFollowers);
@@ -136,6 +140,8 @@ export const handler: Handler = async (e)=>{
     body: JSON.stringify({
       followers,
       rep,
+      age: Math.round(ageYears), // Новое поле: возраст в годах
+      joinYear, // Новое поле: год регистрации
       smartTop,
       smartMedianFollowers,
       smartAvgScore,
