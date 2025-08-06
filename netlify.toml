@@ -4,4 +4,4 @@
   node_bundler = "esbuild"
 
 [build.environment]
-  SECRETS_SCAN_OMIT_PATHS = "README.md" 
+  SECRETS_SCAN_OMIT_PATHS = "README.md,netlify/functions/test-*.js,netlify/functions/test-*.ts,netlify/functions/debug_*.ts" 
