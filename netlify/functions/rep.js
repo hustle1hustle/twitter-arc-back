@@ -23,10 +23,21 @@ export const handler = async (e) => {
     const pub = info.public_metrics || {};
     const top = (topFollowers || []).slice(0, 5).map(s => `@${s.screeName}`);
     
+    // Безопасный расчет возраста аккаунта
+    let ageInYears = 1; // по умолчанию 1 год
+    if (info.register_date) {
+      try {
+        ageInYears = (Date.now() - Date.parse(info.register_date)) / (3.154e10);
+        if (isNaN(ageInYears) || ageInYears < 0) ageInYears = 1;
+      } catch (e) {
+        ageInYears = 1;
+      }
+    }
+    
     const rep = Math.round(
       0.35 * Math.log10(Math.max(pub.followers_count || 1, 1)) * 100 +
       0.25 * (top.length / Math.max(pub.followers_count || 1, 1)) * 1000 +
-      0.15 * Math.sqrt((Date.now() - Date.parse(info.created_at)) / 3.154e10) * 10 +
+      0.15 * Math.sqrt(ageInYears) * 10 +
       0.15 * (info.engagement_rate || 0) +
       0.10 * ((score.score || 0) / 10)
     );
