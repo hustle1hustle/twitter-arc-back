@@ -10,7 +10,7 @@ const tw = new TwitterApi({
 });
 
 function setCookie(name:string,val:string,maxAge=900){ // 15 min
-  return `${name}=${val}; Max-Age=${maxAge}; Path=/; HttpOnly; Secure; SameSite=Lax`;
+  return `${name}=${val}; Max-Age=${maxAge}; Path=/; HttpOnly; Secure; SameSite=None`;
 }
 
 export const handler: Handler = async (evt) => {
