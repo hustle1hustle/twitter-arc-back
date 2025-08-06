@@ -36,29 +36,12 @@ export const handler: Handler = async (e)=>{
   const smartTop = (topFollowersData || []).slice(0,5)
     .map(s => `@${s.screeName}`); // Используем screeName как в API
   
-  // followers-stats
-  const stats = await ts(`/followers-stats?handle=${h}`);
-  const { engagement, avg_likes, avg_retweets, blue_pct } = stats ?? {};
-  
-  const topFollowersFull = await ts(`/top-followers/${h}`);
-  const flw = topFollowersFull?.followers ?? [];
-  const smartMedianFollowers =
-        flw.length ? flw.map(f=>f.follower_count).sort((a,b)=>a-b)[~~(flw.length/2)] : 0;
-  const smartAvgScore =
-        flw.length ? flw.reduce((s,f)=>s+f.score,0)/flw.length : 0;
-  
-  const scoreFull = await ts(`/score/${h}`);
-  const { top_hashtags = [], top_mentions = [] } = scoreFull ?? {};
-  const change = await ts(`/score-changes?handle=${h}&days=30`);
-  const momentum30d =
-        change?.length ? change.at(-1).score - change[0].score : 0;
-  
   // Возраст аккаунта в годах
   const createdDate = new Date(info.register_date);
   const now = new Date();
   const ageYears = (now - createdDate) / (1000 * 60 * 60 * 24 * 365);
   
-  // Используем данные из score endpoint - убираем safe() для score.score
+  // Используем данные из score endpoint
   const smartAvg = scoreData.score || 0;
   const smartMed = safe(scoreData.median_followers || 0);
 
@@ -85,15 +68,15 @@ export const handler: Handler = async (e)=>{
       followers,
       rep,
       smartTop,
-      smartMedianFollowers,
-      smartAvgScore,
-      engagementRate: engagement,
-      avgLikes: avg_likes,
-      avgRetweets: avg_retweets,
-      topHashtags: top_hashtags,
-      topMentions: top_mentions,
-      bluePct: blue_pct,
-      momentum30d,
+      smartMedianFollowers: smartMed,
+      smartAvgScore: smartAvg,
+      engagementRate: 0, // нет в API
+      avgLikes: 0, // нет в API
+      avgRetweets: 0, // нет в API
+      topHashtags: [], // нет в API
+      topMentions: [], // нет в API
+      bluePct: 0, // нет в API
+      momentum30d: 0 // нет в API
     })
   };
 }; 
