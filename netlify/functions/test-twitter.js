@@ -4,7 +4,19 @@ exports.handler = async () => {
   console.log('🧪 Testing Twitter API in Netlify');
   
   try {
-    const BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAALn02gEAAAAARalQBbXeqGzfjfO47Tl2PAdlMgs%3DYFsxAlY9KqAUhopPEuqPbHkZf59Krtn2youfT1xtIlEjBfzjMj';
+    const BEARER_TOKEN = process.env.BEARER_TOKEN;
+    if (!BEARER_TOKEN) {
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          success: false,
+          error: "BEARER_TOKEN not set",
+          twitter_working: false
+        })
+      };
+    }
+    
     const client = new TwitterApi(BEARER_TOKEN);
     
     const user = await client.v2.userByUsername('zeroxcholy', {
