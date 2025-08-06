@@ -13,7 +13,7 @@ export const handler: Handler = async (e)=>{
   
   console.log('📡 Fetching data for:', h);
   
-  // Используем только рабочие endpoints
+  // TweetScout API calls
   const [info,topFollowersData,scoreData]=await Promise.all([
     ts(`/info/${h}`), 
     ts(`/top-followers/${h}?from=db`),
@@ -44,18 +44,25 @@ export const handler: Handler = async (e)=>{
   // Используем данные из score endpoint
   const smartAvg = scoreData.score || 0;
   const smartMed = safe(scoreData.median_followers || 0);
+  
+  // ---------- SMART MEDIAN & AVG SCORE
+  const flw = topFollowersData || [];
+  const smartMedianFollowers = flw.length ? flw.map(f => f.followersCount).sort((a, b) => a - b)[~~(flw.length / 2)] : 0;
+  const smartAvgScore = flw.length ? flw.reduce((s, f) => s + f.score, 0) / flw.length : 0;
 
   console.log('🧮 Calculated values:');
   console.log('followers:', followers);
   console.log('ageYears:', ageYears);
   console.log('smartMed:', smartMed);
   console.log('smartAvg:', smartAvg);
+  console.log('smartMedianFollowers:', smartMedianFollowers);
+  console.log('smartAvgScore:', smartAvgScore);
 
   const rep = Math.round(
     0.35 * Math.log10(Math.max(followers, 1)) * 100 +
     0.25 * (smartTop.length / Math.max(followers, 1)) * 1000 +
     0.15 * Math.sqrt(ageYears) * 10 +
-    0.15 * 0 + // engagement rate нет в API
+    0.15 * 0 + // engagement rate пока 0 (нужен Twitter API)
     0.10 * (smartAvg / 10)
   );
 
@@ -68,15 +75,15 @@ export const handler: Handler = async (e)=>{
       followers,
       rep,
       smartTop,
-      smartMedianFollowers: smartMed,
-      smartAvgScore: smartAvg,
-      engagementRate: 0, // нет в API
-      avgLikes: 0, // нет в API
-      avgRetweets: 0, // нет в API
-      topHashtags: [], // нет в API
-      topMentions: [], // нет в API
-      bluePct: 0, // нет в API
-      momentum30d: 0 // нет в API
+      smartMedianFollowers,
+      smartAvgScore,
+      engagementRate: 0, // нужен Twitter API
+      avgLikes: 0, // нужен Twitter API
+      avgRetweets: 0, // нужен Twitter API
+      topHashtags: [], // нужен Twitter API
+      topMentions: [], // нужен Twitter API
+      bluePct: 0, // нужен Twitter API
+      momentum30d: 0 // нужен Twitter API
     })
   };
 }; 
