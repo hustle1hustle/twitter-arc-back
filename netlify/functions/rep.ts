@@ -94,7 +94,7 @@ export const handler: Handler = async (e)=>{
   // Возраст аккаунта в годах
   const createdDate = new Date(info.register_date);
   const now = new Date();
-  const ageYears = (now - createdDate) / (1000 * 60 * 60 * 24 * 365);
+  const ageYears = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
   
   // Год регистрации
   const joinYear = createdDate.getFullYear();
@@ -153,7 +153,10 @@ export const handler: Handler = async (e)=>{
 
   return {
     statusCode: 200,
-    headers: { "Access-Control-Allow-Origin": "*" },
+    headers: { 
+      "Access-Control-Allow-Origin": "*",
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({
       followers,
       rep,
