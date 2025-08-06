@@ -114,6 +114,14 @@ export const handler: Handler = async (e)=>{
     (followersStats.projects_count || 0) + 
     (followersStats.venture_capitals_count || 0) : 0;
 
+  // ---------- SMART BREAKDOWN
+  const smart = {
+    total: smartFollowersCount,
+    vc: followersStats && !followersStats.error ? (followersStats.venture_capitals_count || 0) : 0,
+    projects: followersStats && !followersStats.error ? (followersStats.projects_count || 0) : 0,
+    influencers: followersStats && !followersStats.error ? (followersStats.influencers_count || 0) : 0
+  };
+
   console.log('🧮 Calculated values:');
   console.log('followers:', followers);
   console.log('ageYears:', ageYears);
@@ -123,6 +131,7 @@ export const handler: Handler = async (e)=>{
   console.log('smartMedianFollowers:', smartMedianFollowers);
   console.log('smartAvgScore:', smartAvgScore);
   console.log('smartFollowersCount:', smartFollowersCount);
+  console.log('smart breakdown:', smart);
 
   const rep = Math.round(
     0.35 * Math.log10(Math.max(followers, 1)) * 100 +
@@ -146,6 +155,7 @@ export const handler: Handler = async (e)=>{
       smartMedianFollowers,
       smartAvgScore,
       smartFollowersCount, // Новое поле!
+      smart, // Новое поле с подразбиением!
       engagementRate,
       avgLikes,
       avgRetweets,
