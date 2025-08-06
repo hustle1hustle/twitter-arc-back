@@ -1,11 +1,13 @@
-import fetch from 'node-fetch';
+const fetch = require('node-fetch');
 
 const B = "https://api.tweetscout.io/v2";
 const H = { ApiKey: process.env.TWEETSCOUT_KEY };
 
 const ts = (p) => fetch(`${B}${p}`, { headers: H }).then(r => r.json());
 
-export const handler = async (e) => {
+exports.handler = async (e) => {
+  console.log('λ rep invoked →', process.env.URL + '/.netlify/functions/rep');
+  
   const h = (e.queryStringParameters?.u || "").replace(/^@/, "").toLowerCase();
   if (!h) return { statusCode: 400, body: "handle?" };
   
@@ -17,7 +19,7 @@ export const handler = async (e) => {
     ]);
     
     if (info.error || topFollowers.error) {
-      return { statusCode: 502, body: '{"error":"ts_unavailable"}' };
+      return { statusCode: 404, body: '{"error":"rep_not_built"}' };
     }
     
     const pub = info.public_metrics || {};
