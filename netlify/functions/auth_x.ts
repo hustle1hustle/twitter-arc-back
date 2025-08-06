@@ -98,7 +98,7 @@ export const handler: Handler = async (evt) => {
   authUrl.searchParams.set('response_type', 'code');
   authUrl.searchParams.set('client_id', CLIENT_ID);
   authUrl.searchParams.set('redirect_uri', CALLBACK);
-  authUrl.searchParams.set('scope', 'tweet.read users.read offline.access');
+  authUrl.searchParams.set('scope', 'tweet.read users.read');
   authUrl.searchParams.set('state', state);
   authUrl.searchParams.set('code_challenge', codeChallenge);
   authUrl.searchParams.set('code_challenge_method', 'S256');
