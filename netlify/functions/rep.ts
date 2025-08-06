@@ -15,20 +15,23 @@ export const handler: Handler = async (e)=>{
   console.log('📡 Fetching data for:', h);
   
   // TweetScout API calls
-  const [info,topFollowersData,scoreData]=await Promise.all([
+  const [info,topFollowersData,scoreData,followersStats]=await Promise.all([
     ts(`/info/${h}`), 
     ts(`/top-followers/${h}?from=db`),
-    ts(`/score/${h}`)
+    ts(`/score/${h}`),
+    ts(`/followers-stats?user_handle=${h}`)
   ]);
   
   console.log('TweetScout info →', info);
   console.log('TweetScout topFollowers →', topFollowersData);
   console.log('TweetScout score →', scoreData);
+  console.log('TweetScout followersStats →', followersStats);
   
   console.log('📊 API Responses:');
   console.log('info:', JSON.stringify(info, null, 2));
   console.log('topFollowers:', JSON.stringify(topFollowersData, null, 2));
   console.log('score:', JSON.stringify(scoreData, null, 2));
+  console.log('followersStats:', JSON.stringify(followersStats, null, 2));
   
   if(info.error||topFollowersData.error) return { statusCode: 404, body: '{"error":"rep_not_built"}' };
   
@@ -102,6 +105,12 @@ export const handler: Handler = async (e)=>{
   const smartMedianFollowers = flw.length ? flw.map((f: any) => f.followersCount).sort((a: number, b: number) => a - b)[~~(flw.length / 2)] : 0;
   const smartAvgScore = flw.length ? flw.reduce((s: number, f: any) => s + f.score, 0) / flw.length : 0;
 
+  // ---------- SMART FOLLOWERS COUNT
+  const smartFollowersCount = followersStats && !followersStats.error ? 
+    (followersStats.influencers_count || 0) + 
+    (followersStats.projects_count || 0) + 
+    (followersStats.venture_capitals_count || 0) : 0;
+
   console.log('🧮 Calculated values:');
   console.log('followers:', followers);
   console.log('ageYears:', ageYears);
@@ -109,6 +118,7 @@ export const handler: Handler = async (e)=>{
   console.log('smartAvg:', smartAvg);
   console.log('smartMedianFollowers:', smartMedianFollowers);
   console.log('smartAvgScore:', smartAvgScore);
+  console.log('smartFollowersCount:', smartFollowersCount);
 
   const rep = Math.round(
     0.35 * Math.log10(Math.max(followers, 1)) * 100 +
@@ -129,6 +139,7 @@ export const handler: Handler = async (e)=>{
       smartTop,
       smartMedianFollowers,
       smartAvgScore,
+      smartFollowersCount, // Новое поле!
       engagementRate,
       avgLikes,
       avgRetweets,
