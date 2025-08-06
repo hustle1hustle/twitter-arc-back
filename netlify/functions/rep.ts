@@ -41,8 +41,8 @@ export const handler: Handler = async (e)=>{
   const now = new Date();
   const ageYears = (now - createdDate) / (1000 * 60 * 60 * 24 * 365);
   
-  // Используем данные из score endpoint
-  const smartAvg = safe(score.score);
+  // Используем данные из score endpoint - убираем safe() для score.score
+  const smartAvg = score.score || 0;
   const smartMed = safe(score.median_followers || 0);
 
   console.log('🧮 Calculated values:');
