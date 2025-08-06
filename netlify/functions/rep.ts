@@ -125,7 +125,7 @@ export const handler: Handler = async (e)=>{
   // ---------- REP CALCULATIONS FOR EACH METRIC
   const repFollowers = Math.round(Math.log10(Math.max(followers, 1)) * 100);
   const repAge = Math.round(Math.sqrt(ageYears) * 10);
-  const repSmartFollowers = Math.round((smartFollowersCount / Math.max(followers, 1)) * 1000); // Самая мощная
+  const repSmartFollowers = smartFollowersCount * 10; // 10 REP за каждого умного фолловера
   const repEngagement = Math.round(engagementRate * 100);
   const repSmartScore = Math.round(smartAvg / 10);
 
