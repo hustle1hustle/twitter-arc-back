@@ -9,9 +9,6 @@ const tw = new TwitterApi({
   appSecret: process.env.TWITTER_API_SECRET!
 });
 
-// In-memory storage (временное решение)
-const oauthSecrets = new Map<string, { secret: string; timestamp: number }>();
-
 export const handler: Handler = async (evt) => {
   const qp = evt.queryStringParameters || {};
   const { oauth_token, oauth_verifier, oauth_secret } = qp;
@@ -20,26 +17,14 @@ export const handler: Handler = async (evt) => {
 
   /* ---------- CALLBACK ---------- */
   if (oauth_token && oauth_verifier) {
-    // Try to get secret from URL parameter first, then from memory
-    let secret = oauth_secret;
-    
-    if (!secret) {
-      const stored = oauthSecrets.get(oauth_token);
-      if (stored && (Date.now() - stored.timestamp) < 15 * 60 * 1000) {
-        secret = stored.secret;
-        oauthSecrets.delete(oauth_token); // Clean up
-      }
-    }
-
-    console.log('🔍 Secret found:', !!secret);
-
-    if (!secret) {
-      return { statusCode: 400, body: "missing token_secret" };
+    if (!oauth_secret) {
+      console.error('🔍 Missing oauth_secret in callback');
+      return { statusCode: 400, body: "missing oauth_secret" };
     }
 
     try {
       console.log('🔍 Attempting OAuth exchange...');
-      const { client: logged } = await tw.login(oauth_token, secret, oauth_verifier);
+      const { client: logged } = await tw.login(oauth_token, oauth_secret, oauth_verifier);
       const me = await logged.v2.me();
 
       console.log('🔍 OAuth successful, user:', me.data.username);
@@ -61,17 +46,6 @@ export const handler: Handler = async (evt) => {
         await tw.generateAuthLink(CALLBACK, { linkMode: "authorize" });
 
   console.log('🔍 Generated OAuth link:', { tok, sec: sec ? 'SECRET_GENERATED' : 'NO_SECRET' });
-
-  // Store in memory
-  oauthSecrets.set(tok, { secret: sec, timestamp: Date.now() });
-
-  // Clean up old entries
-  const now = Date.now();
-  for (const [token, data] of oauthSecrets.entries()) {
-    if (now - data.timestamp > 15 * 60 * 1000) {
-      oauthSecrets.delete(token);
-    }
-  }
 
   // Add secret to callback URL
   const callbackWithSecret = `${CALLBACK}?oauth_secret=${encodeURIComponent(sec)}`;
