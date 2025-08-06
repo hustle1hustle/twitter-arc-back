@@ -37,52 +37,56 @@ export const handler: Handler = async (e)=>{
   let avgLikes = 0;
   let avgRetweets = 0;
   let bluePct = 0;
-  let topHashtags = [];
-  let topMentions = [];
+  let topHashtags: string[] = [];
+  let topMentions: string[] = [];
   
   try {
-    const BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAALn02gEAAAAARalQBbXeqGzfjfO47Tl2PAdlMgs%3DYFsxAlY9KqAUhopPEuqPbHkZf59Krtn2youfT1xtIlEjBfzjMj';
-    const twitterClient = new TwitterApi(BEARER_TOKEN);
-    
-    // Get user metrics
-    const user = await twitterClient.v2.userByUsername(h, {
-      'user.fields': ['public_metrics', 'verified']
-    });
-    
-    if (user.data) {
-      const metrics = user.data.public_metrics;
-      const followers = metrics?.followers_count || 0;
-      const tweetCount = metrics?.tweet_count || 0;
-      const totalLikes = metrics?.like_count || 0;
+    const BEARER_TOKEN = process.env.BEARER_TOKEN;
+    if (!BEARER_TOKEN) {
+      console.log('⚠️ BEARER_TOKEN не установлен');
+    } else {
+      const twitterClient = new TwitterApi(BEARER_TOKEN);
       
-      // Calculate engagement rate from user metrics
-      if (followers > 0 && tweetCount > 0) {
-        engagementRate = parseFloat(((totalLikes / (tweetCount * followers)) * 100).toFixed(4));
-      }
-      
-      // Get followers for blue %
-      const followers_data = await twitterClient.v2.followers(user.data.id, {
-        'user.fields': ['verified_type'],
-        'max_results': 100
+      // Get user metrics
+      const user = await twitterClient.v2.userByUsername(h, {
+        'user.fields': ['public_metrics', 'verified']
       });
       
-      if (followers_data.data && followers_data.data.length > 0) {
-        const verifiedCount = followers_data.data.filter(u => u.verified_type && u.verified_type !== 'none').length;
-        bluePct = parseFloat((100 * verifiedCount / followers_data.data.length).toFixed(2));
+      if (user.data) {
+        const metrics = user.data.public_metrics;
+        const followers = metrics?.followers_count || 0;
+        const tweetCount = metrics?.tweet_count || 0;
+        const totalLikes = metrics?.like_count || 0;
+        
+        // Calculate engagement rate from user metrics
+        if (followers > 0 && tweetCount > 0) {
+          engagementRate = parseFloat(((totalLikes / (tweetCount * followers)) * 100).toFixed(4));
+        }
+        
+        // Get followers for blue %
+        const followers_data = await twitterClient.v2.followers(user.data.id, {
+          'user.fields': ['verified_type'],
+          'max_results': 100
+        });
+        
+        if (followers_data.data && followers_data.data.length > 0) {
+          const verifiedCount = followers_data.data.filter(u => u.verified_type && u.verified_type !== 'none').length;
+          bluePct = parseFloat((100 * verifiedCount / followers_data.data.length).toFixed(2));
+        }
+        
+        console.log('Twitter API данные:');
+        console.log('engagementRate:', engagementRate);
+        console.log('bluePct:', bluePct);
       }
-      
-      console.log('Twitter API данные:');
-      console.log('engagementRate:', engagementRate);
-      console.log('bluePct:', bluePct);
     }
   } catch (error) {
-    console.error('Twitter API error:', error.message);
+    console.error('Twitter API error:', error);
   }
   
   // Исправляем парсинг данных - используем правильные поля
   const followers = safe(info.followers_count); // Прямое поле, не public_metrics
   const smartTop = (topFollowersData || []).slice(0,5)
-    .map(s => `@${s.screeName}`); // Используем screeName как в API
+    .map((s: any) => `@${s.screeName}`); // Используем screeName как в API
   
   // Возраст аккаунта в годах
   const createdDate = new Date(info.register_date);
@@ -95,8 +99,8 @@ export const handler: Handler = async (e)=>{
   
   // ---------- SMART MEDIAN & AVG SCORE
   const flw = topFollowersData || [];
-  const smartMedianFollowers = flw.length ? flw.map(f => f.followersCount).sort((a, b) => a - b)[~~(flw.length / 2)] : 0;
-  const smartAvgScore = flw.length ? flw.reduce((s, f) => s + f.score, 0) / flw.length : 0;
+  const smartMedianFollowers = flw.length ? flw.map((f: any) => f.followersCount).sort((a: number, b: number) => a - b)[~~(flw.length / 2)] : 0;
+  const smartAvgScore = flw.length ? flw.reduce((s: number, f: any) => s + f.score, 0) / flw.length : 0;
 
   console.log('🧮 Calculated values:');
   console.log('followers:', followers);
