@@ -19,6 +19,10 @@ export const handler: Handler = async (e)=>{
     ts(`/audience/${h}`), ts(`/verification/blue/${h}`)
   ]);
   
+  console.log('TweetScout info →', info);
+  console.log('TweetScout smart →', topFollowers);
+  console.log('TweetScout meta  →', meta);
+  
   console.log('📊 API Responses:');
   console.log('info:', JSON.stringify(info, null, 2));
   console.log('topFollowers:', JSON.stringify(topFollowers, null, 2));
@@ -31,7 +35,15 @@ export const handler: Handler = async (e)=>{
   const pub=info.public_metrics||{}, smartTop=(topFollowers||[]).slice(0,5)
   .map(s=>`@${s.screeName}`); // Исправлено: screeName вместо screenName
 
-  const followers   = safe(pub.followers_count);
+  let followers   = safe(pub.followers_count);
+  if (followers === 0) {
+    try {
+      const twInfo = await ts(`/score/${h}`);
+      if(twInfo.public_metrics?.followers_count)
+        followers = twInfo.public_metrics.followers_count;
+    } catch(e){ console.error('fallback failed',e);}
+  }
+  
   const ageYears    = (Date.now() - Date.parse(info.created_at)) / 3.154e10;
   const engagement  = safe(info.engagement_rate);
   const avgLikes    = safe(info.avg_likes);
@@ -63,7 +75,7 @@ export const handler: Handler = async (e)=>{
     headers: { "Access-Control-Allow-Origin": "*" },
     body: JSON.stringify({
       rep,
-      followers,
+      followers: followers || null,
       smartTop,
       smartMedianFollowers: smartMed,
       smartAvgScore: smartAvg,
