@@ -122,6 +122,13 @@ export const handler: Handler = async (e)=>{
     influencers: followersStats && !followersStats.error ? (followersStats.influencers_count || 0) : 0
   };
 
+  // ---------- REP CALCULATIONS FOR EACH METRIC
+  const repFollowers = Math.round(Math.log10(Math.max(followers, 1)) * 100);
+  const repAge = Math.round(Math.sqrt(ageYears) * 10);
+  const repSmartFollowers = Math.round((smartFollowersCount / Math.max(followers, 1)) * 1000); // Самая мощная
+  const repEngagement = Math.round(engagementRate * 100);
+  const repSmartScore = Math.round(smartAvg / 10);
+
   console.log('🧮 Calculated values:');
   console.log('followers:', followers);
   console.log('ageYears:', ageYears);
@@ -132,13 +139,20 @@ export const handler: Handler = async (e)=>{
   console.log('smartAvgScore:', smartAvgScore);
   console.log('smartFollowersCount:', smartFollowersCount);
   console.log('smart breakdown:', smart);
+  console.log('REP breakdown:');
+  console.log('  repFollowers:', repFollowers);
+  console.log('  repAge:', repAge);
+  console.log('  repSmartFollowers:', repSmartFollowers);
+  console.log('  repEngagement:', repEngagement);
+  console.log('  repSmartScore:', repSmartScore);
 
+  // ---------- FINAL REP CALCULATION (smart followers самая мощная)
   const rep = Math.round(
-    0.35 * Math.log10(Math.max(followers, 1)) * 100 +
-    0.25 * (smartTop.length / Math.max(followers, 1)) * 1000 +
-    0.15 * Math.sqrt(ageYears) * 10 +
-    0.15 * engagementRate + // Используем Twitter API данные
-    0.10 * (smartAvg / 10)
+    0.40 * repSmartFollowers + // 40% - самая мощная
+    0.25 * repFollowers +      // 25% - количество фолловеров
+    0.15 * repAge +            // 15% - возраст аккаунта
+    0.10 * repEngagement +     // 10% - engagement rate
+    0.10 * repSmartScore       // 10% - smart score
   );
 
   console.log('🎯 Final REP Score:', rep);
@@ -156,6 +170,12 @@ export const handler: Handler = async (e)=>{
       smartAvgScore,
       smartFollowersCount, // Новое поле!
       smart, // Новое поле с подразбиением!
+      // REP для каждого пункта
+      repFollowers,
+      repAge,
+      repSmartFollowers,
+      repEngagement,
+      repSmartScore,
       engagementRate,
       avgLikes,
       avgRetweets,
