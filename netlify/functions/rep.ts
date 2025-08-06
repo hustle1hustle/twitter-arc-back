@@ -146,14 +146,8 @@ export const handler: Handler = async (e)=>{
   console.log('  repEngagement:', repEngagement);
   console.log('  repSmartScore:', repSmartScore);
 
-  // ---------- FINAL REP CALCULATION (smart followers самая мощная)
-  const rep = Math.round(
-    0.40 * repSmartFollowers + // 40% - самая мощная
-    0.25 * repFollowers +      // 25% - количество фолловеров
-    0.15 * repAge +            // 15% - возраст аккаунта
-    0.10 * repEngagement +     // 10% - engagement rate
-    0.10 * repSmartScore       // 10% - smart score
-  );
+  // ---------- FINAL REP CALCULATION (простая сумма всех REP)
+  const rep = repFollowers + repAge + repSmartFollowers + repEngagement + repSmartScore;
 
   console.log('🎯 Final REP Score:', rep);
 
