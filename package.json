@@ -6,7 +6,7 @@
   },
   "dependencies": {
     "@netlify/functions": "^4",
-    "twitter-api-v2": "^1.13.0"
+    "twitter-api-v2": "^1.12.0"
   },
   "devDependencies": {
     "@types/node": "^20",
