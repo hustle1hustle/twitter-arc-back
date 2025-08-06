@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test files with API keys (local only)
+debug-*.cjs
+test-*.cjs
+*-analysis.cjs
+*-endpoint.cjs
+enhanced-*.cjs
+final-*.cjs
+quick-*.cjs
+sophireum-*.cjs 
