@@ -1,52 +1,57 @@
 import type { Handler } from "@netlify/functions";
-import { TwitterApi } from "twitter-api-v2";
+import { TwitterApi }   from "twitter-api-v2";
 
-// volatile store lives per warm lambda instance (good for 5-10 min)
-const inMemorySecrets = new Map<string, string>();
+const appKey    = process.env.TWITTER_API_KEY!;
+const appSecret = process.env.TWITTER_API_SECRET!;
+const CALLBACK  = process.env.TWITTER_CALLBACK!;  // exact URL in Dev Portal
+const FRONTPAGE = "https://rad-toffee-97e32a.netlify.app";  // where stories live
 
-const client = new TwitterApi({
-  appKey:    process.env.TWITTER_API_KEY!,
-  appSecret: process.env.TWITTER_API_SECRET!
-});
-const CALLBACK = process.env.TWITTER_CALLBACK!;
+const tw = new TwitterApi({ appKey, appSecret });
 
-/* ---------- STEP 1: redirect ---------- */
 export const handler: Handler = async (evt) => {
-  // 1. callback comes back with oauth_token + oauth_verifier
-  if (evt.queryStringParameters?.oauth_token &&
-      evt.queryStringParameters?.oauth_verifier) {
+  const { oauth_token, oauth_verifier } = evt.queryStringParameters || {};
 
-    // get token & secret we stored in memory
-    const reqToken = evt.queryStringParameters.oauth_token;
-    const reqSecret = inMemorySecrets.get(reqToken);
+  /* ---------- STEP 1  (callback from Twitter) ---------- */
+  if (oauth_token && oauth_verifier) {
+    //  cookie name = rt_<token>  value = secret
+    const ck = evt.headers.cookie || "";
+    const m  = ck.match(new RegExp(`rt_${oauth_token}=([^;]+)`));
+    const secret = m && m[1];
 
-    if (!reqSecret) {
-      return { statusCode: 410, body: 'request token expired' };
-    }
+    if (!secret)
+      return { statusCode: 400, body: "request token secret missing" };
 
     try {
-      const { client: logged, accessToken, accessSecret } =
-        await client.login(reqToken, reqSecret,
-                           evt.queryStringParameters.oauth_verifier);
-
-      // SUCCESS → redirect back to front with handle
-      const user = await logged.v2.me();
+      const { client: logged } =
+        await tw.login(oauth_token, secret, oauth_verifier);
+      const me = await logged.v2.me();
+      //  redirect to front with ?u=username
       return {
         statusCode: 302,
-        headers: { Location: `https://rad-toffee-97e32a.netlify.app/?u=${user.data.username}` }
+        headers: { Location: `${FRONTPAGE}/?u=${me.data.username}` }
       };
-    } catch (e:any) {
-      return { statusCode: 401, body: e.message };
+    } catch (e: any) {
+      console.error("OAuth exchange failed", e);
+      return { statusCode: 401, body: "oauth_exchange_failed" };
     }
   }
 
-  /* ---------- STEP 0: generate auth link ---------- */
-  const { url, oauth_token, oauth_token_secret } =
-        await client.generateAuthLink(CALLBACK);
+  /* ---------- STEP 0  (generate link) ---------- */
+  const { url, oauth_token: tok, oauth_token_secret: sec } =
+        await tw.generateAuthLink(CALLBACK, { linkMode: "authorize" });
 
-  inMemorySecrets.set(oauth_token, oauth_token_secret);   // <-- NEW
+  //  keep secret 15 min; SameSite=None гарантирует, что вернётся в cross-site callback
+  const cookie = [
+    `rt_${tok}=${sec}`,
+    "Max-Age=900",
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=None"
+  ].join("; ");
+
   return {
     statusCode: 302,
-    headers: { Location: url }
+    headers: { "Set-Cookie": cookie, Location: url }
   };
 }; 

@@ -1,1 +1,8 @@
-{"private":true,"type":"module","dependencies":{"@netlify/functions":"^4","node-fetch":"^3.3.2"}} 
+{
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/functions": "^4",
+    "twitter-api-v2": "^1.17.4"
+  }
+} 
